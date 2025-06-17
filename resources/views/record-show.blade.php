@@ -121,10 +121,24 @@
                     <div class="record-gallery">
                         <div class="gallery-main">
                             <div class="main-image-container">
-                                <img src="{{ asset('assets/images/Photo_record_pizza.png') }}" alt="Record principal" class="main-image" id="mainImage">
+                                <!-- Conteneur pour image OU vidéo avec indicateurs de type -->
+                                <img src="{{ asset('assets/images/Photo_record_pizza.png') }}" alt="Record principal" class="main-media main-image" id="mainMedia">
+                                <video class="main-media main-video" id="mainVideo" controls playsinline style="display: none;">
+                                    <source src="{{ asset('assets/videos/record-video-1.mp4') }}" type="video/mp4">
+                                    Votre navigateur ne supporte pas la vidéo.
+                                </video>
+
+                                <!-- Bouton play au centre de la vidéo -->
+                                <div class="video-play-button" id="videoPlayButton" style="display: none;" onclick="playVideo()">
+                                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none">
+                                        <circle cx="12" cy="12" r="12" fill="rgba(255, 255, 255, 0.9)"/>
+                                        <polygon points="9,7 9,17 17,12" fill="#00296B"/>
+                                    </svg>
+                                </div>
                             </div>
                         </div>
 
+                        <!-- Miniatures avec navigation -->
                         <div class="gallery-thumbnails-container">
                             <button class="thumbnail-nav thumbnail-nav-left" onclick="scrollThumbnails('left')" id="scrollLeftBtn">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -133,13 +147,13 @@
                             </button>
 
                             <div class="gallery-thumbnails" id="thumbnailsContainer">
-                                <div class="thumbnail active" onclick="showImage(0)" data-image="{{ asset('assets/images/Photo_record_pizza.png') }}">
+                                <div class="thumbnail active" onclick="showMedia(0)" data-type="image" data-src="{{ asset('assets/images/Photo_record_pizza.png') }}">
                                     <img src="{{ asset('assets/images/Photo_record_pizza.png') }}" alt="Thumbnail 1">
                                 </div>
-                                <div class="thumbnail" onclick="showImage(1)" data-image="{{ asset('assets/images/Photo_record_pizza2.png') }}">
+                                <div class="thumbnail" onclick="showMedia(1)" data-type="image" data-src="{{ asset('assets/images/Photo_record_pizza2.png') }}">
                                     <img src="{{ asset('assets/images/Photo_record_pizza2.png') }}" alt="Thumbnail 2">
                                 </div>
-                                <div class="thumbnail" onclick="showImage(2)" data-image="{{ asset('assets/images/Photo_record_pizza3.png') }}">
+                                <div class="thumbnail" onclick="showMedia(2)" data-type="image" data-src="{{ asset('assets/images/Photo_record_pizza3.png') }}">
                                     <img src="{{ asset('assets/images/Photo_record_pizza3.png') }}" alt="Thumbnail 3">
                                 </div>
                                 <!-- Vidéo 1 -->
@@ -234,7 +248,7 @@
     <script>
         // Gestion du système de like
         let isLiked = false;
-        let likeCount = 0; // Valeur initiale
+        let likeCount = 0;
 
         function toggleLike() {
             const likeButton = document.getElementById('likeButton');
@@ -242,48 +256,30 @@
             const likeCountElement = document.getElementById('likeCount');
 
             if (!isLiked) {
-                // Liker
                 isLiked = true;
                 likeCount++;
                 likeButton.classList.add('liked');
-
-                // Animer le compteur
                 likeCountElement.classList.add('like-count-animation');
                 likeCountElement.textContent = likeCount;
-
-                // Créer des particules de cœur
                 createHeartParticles(likeButton);
-
-                // Optionnel : envoyer la requête au serveur
-                // sendLikeToServer(true);
-
             } else {
-                // Dé-liker
                 isLiked = false;
                 likeCount--;
                 likeButton.classList.remove('liked');
-
-                // Animer le compteur
                 likeCountElement.classList.add('like-count-animation');
                 likeCountElement.textContent = likeCount;
-
-                // Optionnel : envoyer la requête au serveur
-                // sendLikeToServer(false);
             }
 
-            // Nettoyer l'animation du compteur
             setTimeout(() => {
                 likeCountElement.classList.remove('like-count-animation');
             }, 400);
         }
 
-        // Créer des particules de cœur pour l'effet visuel
         function createHeartParticles(button) {
             const particlesContainer = document.createElement('div');
             particlesContainer.className = 'heart-particles';
             button.appendChild(particlesContainer);
 
-            // Créer 3-5 particules
             for (let i = 0; i < 4; i++) {
                 const particle = document.createElement('div');
                 particle.className = 'heart-particle';
@@ -293,60 +289,210 @@
                 particlesContainer.appendChild(particle);
             }
 
-            // Nettoyer les particules après l'animation
             setTimeout(() => {
                 button.removeChild(particlesContainer);
             }, 1000);
         }
 
-        // Fonction pour envoyer le like au serveur (à personnaliser)
-        function sendLikeToServer(liked) {
-            // Exemple avec fetch API
-            /*
-            fetch('/api/records/like', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: JSON.stringify({
-                    record_id: RECORD_ID, // ID du record
-                    liked: liked
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Mettre à jour le compteur avec la valeur du serveur
-                    likeCount = data.like_count;
-                    document.getElementById('likeCount').textContent = likeCount;
-                }
-            })
-            .catch(error => {
-                console.error('Erreur lors du like:', error);
-                // Revenir à l'état précédent en cas d'erreur
-                toggleLike();
-            });
-            */
+        // Gestion de la galerie avec support vidéo amélioré
+        let currentMediaIndex = 0;
+        let totalMedia = 0;
+        let thumbnails = [];
+        let mediaData = [];
+
+        function initGallery() {
+            thumbnails = document.querySelectorAll('.thumbnail');
+            totalMedia = thumbnails.length;
+
+            if (totalMedia > 0) {
+                mediaData = Array.from(thumbnails).map(thumb => {
+                    const type = thumb.getAttribute('data-type') || 'image';
+                    const src = thumb.getAttribute('data-src') || thumb.getAttribute('data-image');
+                    return { type, src };
+                });
+
+                updateGallery();
+                updateScrollButtons();
+            }
         }
 
-        // Initialiser l'état du like au chargement (optionnel)
-        document.addEventListener('DOMContentLoaded', function() {
-            // Vous pouvez récupérer l'état initial depuis le serveur
-            // Par exemple si l'utilisateur a déjà liké ce record
+        function showMedia(index) {
+            currentMediaIndex = index;
+            updateGallery();
+        }
 
-            /*
-            fetch('/api/records/like-status/' + RECORD_ID)
-            .then(response => response.json())
-            .then(data => {
-                if (data.is_liked) {
-                    isLiked = true;
-                    document.getElementById('likeButton').classList.add('liked');
+        // Garder la compatibilité
+        function showImage(index) {
+            showMedia(index);
+        }
+
+        function updateGallery() {
+            const mainImage = document.getElementById('mainMedia');
+            const mainVideo = document.getElementById('mainVideo');
+            const playIcon = document.getElementById('playIcon');
+            const imageIcon = document.getElementById('imageIcon');
+            const videoPlayButton = document.getElementById('videoPlayButton');
+
+            if (mediaData[currentMediaIndex]) {
+                const currentMedia = mediaData[currentMediaIndex];
+
+                if (currentMedia.type === 'video') {
+                    // Mode vidéo
+                    if (mainImage) mainImage.style.display = 'none';
+                    if (mainVideo) {
+                        mainVideo.style.display = 'block';
+                        mainVideo.src = currentMedia.src;
+                        mainVideo.load();
+
+                        // Afficher le bouton play au centre
+                        if (videoPlayButton) {
+                            videoPlayButton.style.display = 'flex';
+                        }
+
+                        // Réinitialiser l'état pause de la vidéo
+                        mainVideo.pause();
+                        mainVideo.currentTime = 0;
+                    }
+                    if (playIcon) playIcon.style.display = 'block';
+                    if (imageIcon) imageIcon.style.display = 'none';
+                } else {
+                    // Mode image
+                    if (mainVideo) {
+                        mainVideo.pause();
+                        mainVideo.style.display = 'none';
+                    }
+                    if (videoPlayButton) {
+                        videoPlayButton.style.display = 'none';
+                    }
+                    if (mainImage) {
+                        mainImage.style.display = 'block';
+                        mainImage.style.opacity = '0';
+                        setTimeout(() => {
+                            mainImage.src = currentMedia.src;
+                            mainImage.style.opacity = '1';
+                        }, 200);
+                    }
+                    if (playIcon) playIcon.style.display = 'none';
+                    if (imageIcon) imageIcon.style.display = 'block';
                 }
-                likeCount = data.like_count;
-                document.getElementById('likeCount').textContent = likeCount;
-            });
-            */
+
+                // Mettre à jour les miniatures actives
+                thumbnails.forEach((thumb, index) => {
+                    thumb.classList.toggle('active', index === currentMediaIndex);
+                });
+            }
+        }
+
+        // Fonction pour lancer la vidéo
+        function playVideo() {
+            const mainVideo = document.getElementById('mainVideo');
+            const videoPlayButton = document.getElementById('videoPlayButton');
+
+            if (mainVideo && videoPlayButton) {
+                mainVideo.play();
+                videoPlayButton.style.display = 'none';
+
+                // Réafficher le bouton si la vidéo est mise en pause
+                mainVideo.addEventListener('pause', function() {
+                    if (!mainVideo.ended) {
+                        videoPlayButton.style.display = 'flex';
+                    }
+                });
+
+                // Masquer définitivement le bouton à la fin de la vidéo
+                mainVideo.addEventListener('ended', function() {
+                    videoPlayButton.style.display = 'none';
+                });
+            }
+        }
+
+        function scrollThumbnails(direction) {
+            const container = document.getElementById('thumbnailsContainer');
+            if (!container) return;
+
+            const scrollAmount = 200;
+            if (direction === 'left') {
+                container.scrollTo({
+                    left: container.scrollLeft - scrollAmount,
+                    behavior: 'smooth'
+                });
+            } else {
+                container.scrollTo({
+                    left: container.scrollLeft + scrollAmount,
+                    behavior: 'smooth'
+                });
+            }
+
+            setTimeout(updateScrollButtons, 300);
+        }
+
+        function updateScrollButtons() {
+            const container = document.getElementById('thumbnailsContainer');
+            const leftBtn = document.getElementById('scrollLeftBtn');
+            const rightBtn = document.getElementById('scrollRightBtn');
+
+            if (container && leftBtn && rightBtn) {
+                const canScrollLeft = container.scrollLeft > 5;
+                leftBtn.disabled = !canScrollLeft;
+                leftBtn.style.opacity = canScrollLeft ? '1' : '0.3';
+
+                const maxScroll = container.scrollWidth - container.clientWidth;
+                const canScrollRight = container.scrollLeft < (maxScroll - 5);
+                rightBtn.disabled = !canScrollRight;
+                rightBtn.style.opacity = canScrollRight ? '1' : '0.3';
+            }
+        }
+
+        // Navigation clavier
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+                if (e.key === 'ArrowLeft') {
+                    currentMediaIndex = (currentMediaIndex - 1 + totalMedia) % totalMedia;
+                    updateGallery();
+                } else if (e.key === 'ArrowRight') {
+                    currentMediaIndex = (currentMediaIndex + 1) % totalMedia;
+                    updateGallery();
+                }
+            }
+        });
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            const galleryContainer = document.querySelector('.record-gallery');
+            if (galleryContainer) {
+                initGallery();
+
+                // Support du swipe tactile
+                const mainContainer = document.querySelector('.main-image-container');
+                if (mainContainer) {
+                    let startX = 0;
+                    let endX = 0;
+
+                    mainContainer.addEventListener('touchstart', (e) => {
+                        startX = e.touches[0].clientX;
+                    });
+
+                    mainContainer.addEventListener('touchend', (e) => {
+                        endX = e.changedTouches[0].clientX;
+                        const diff = startX - endX;
+                        const threshold = 50;
+
+                        if (Math.abs(diff) > threshold) {
+                            if (diff > 0) {
+                                currentMediaIndex = (currentMediaIndex + 1) % totalMedia;
+                            } else {
+                                currentMediaIndex = (currentMediaIndex - 1 + totalMedia) % totalMedia;
+                            }
+                            updateGallery();
+                        }
+                    });
+                }
+
+                const container = document.getElementById('thumbnailsContainer');
+                if (container) {
+                    container.addEventListener('scroll', updateScrollButtons);
+                }
+            }
         });
     </script>
 @endsection
