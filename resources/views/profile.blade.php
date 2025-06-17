@@ -48,7 +48,7 @@
                             </div>
                         </div>
                     </a>
-                    <a href="{{ route('records.show', 'la-plus-grande-tour-de-cartons-de-pizza') }}" class="record-card">
+                    <a href="{{ route('records.show', 'bf-pg-speed') }}" class="record-card">
                         <div class="record-image">
                             <img src="{{ asset('assets/images/Photo_record_speed.jpeg') }}" alt="Record image">
                         </div>
