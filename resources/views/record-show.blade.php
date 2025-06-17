@@ -12,7 +12,7 @@
                 @elseif($slug === "bf-pg-speed")
                     <h1 class="record-main-title">BF PG A VELO LE PLUS RAPIDEMENT</h1>
                 @elseif($slug === "student-card")
-                    <h1 class="record-main-title">LE PLUS DE CARTE eTUDIANTE DETENUE</h1>
+                    <h1 class="record-main-title">LE PLUS DE CARTEs eTUDIANTEs DETENUEs</h1>
                 @endif
 
                 <div class="record-actions">

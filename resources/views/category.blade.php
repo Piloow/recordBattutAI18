@@ -35,7 +35,7 @@
                             <img src="{{ asset('assets/images/Photo_record_speed.jpg') }}" alt="Record image">
                         </div>
                         <div class="record-content">
-                            <h3 class="record-title">Le plus de carte étudiante détenue</h3>
+                            <h3 class="record-title">Le plus de cartes étudiantes détenues</h3>
                             <p class="record-category">Parcours Étudiant</p>
                         </div>
                         <div class="record-like-date">
